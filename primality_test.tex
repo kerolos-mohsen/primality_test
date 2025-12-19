@@ -253,9 +253,22 @@ For a positive integer $n$, \textbf{Euler's totient function} $\phi(n)$ counts t
 \[
 \phi(n) = \left| \{k : 1 \leq k \leq n, \gcd(k, n) = 1\} \right|
 \]
-For a prime $p$: $\phi(p) = p - 1$. For a prime power: $\phi(p^k) = p^{k-1}(p-1)$.
-For coprime integers: $\phi(mn) = \phi(m)\phi(n)$ when $\gcd(m,n) = 1$.
+For a prime $p$: $\phi(p) = p - 1$.
 \end{definition}
+
+\textbf{Property:} The function is multiplicative: if $\gcd(m,n) = 1$, then $\phi(mn) = \phi(m)\phi(n)$.
+\begin{proof}
+By the Chinese Remainder Theorem, the ring isomorphism $\mathbb{Z}_{mn} \cong \mathbb{Z}_m \times \mathbb{Z}_n$ restricts to the group of units: $(\mathbb{Z}_{mn})^\times \cong (\mathbb{Z}_m)^\times \times (\mathbb{Z}_n)^\times$.
+An integer $x$ is invertible modulo $mn$ if and only if it corresponds to a pair $(a, b)$ where $a$ is invertible mod $m$ and $b$ is invertible mod $n$.
+Thus, the size of the group is the product of the sizes: $\phi(mn) = \phi(m) \cdot \phi(n)$.
+\end{proof}
+
+\begin{theorem}[Roots of Unity in a Field]
+If $p$ is a prime, the congruence $x^2 \equiv 1 \pmod p$ has exactly two solutions: $x \equiv 1$ and $x \equiv -1 \pmod p$.
+\end{theorem}
+\begin{proof}
+The ring $\mathbb{Z}_p$ is a field. In any field, a polynomial of degree $k$ has at most $k$ roots. The quadratic equation $x^2 - 1 = 0$ factors as $(x-1)(x+1) = 0$. Since a field has no zero divisors, either $x-1=0$ or $x+1=0$. Thus $x \equiv 1$ or $x \equiv -1$. (Note: for composite modulus $n$, there can be more roots, e.g., $x^2 \equiv 1 \pmod 8$ has 4 solutions: 1, 3, 5, 7).
+\end{proof}
 
 \subsection{Fermat's Little Theorem}
 The cornerstone of many primality tests is Fermat's Little Theorem.
@@ -267,11 +280,17 @@ a^{p-1} \equiv 1 \pmod p
 \end{equation}
 \end{theorem}
 
-\textbf{Proof Sketch.} Consider the set $S = \{a, 2a, 3a, \ldots, (p-1)a\}$ reduced modulo $p$. Since $\gcd(a, p) = 1$, each element of $S$ is distinct and non-zero modulo $p$. Thus $S \equiv \{1, 2, \ldots, p-1\} \pmod{p}$. Multiplying all elements:
+\textbf{Proof 1: Combinatorial approach.} Consider the set $S = \{a, 2a, 3a, \ldots, (p-1)a\}$ reduced modulo $p$. Since $\gcd(a, p) = 1$, each element of $S$ is distinct and non-zero modulo $p$. Thus $S \equiv \{1, 2, \ldots, p-1\} \pmod{p}$. Multiplying all elements:
 \[
 a \cdot 2a \cdot 3a \cdots (p-1)a \equiv 1 \cdot 2 \cdot 3 \cdots (p-1) \pmod{p}
 \]
 This gives $a^{p-1} \cdot (p-1)! \equiv (p-1)! \pmod{p}$. Since $\gcd((p-1)!, p) = 1$, we can cancel to obtain $a^{p-1} \equiv 1 \pmod{p}$. \hfill $\square$
+
+\textbf{Proof 2: Group Theoretic approach.} The set of non-zero integers modulo $p$, denoted $\mathbb{Z}_p^*$, forms a multiplicative group of order $p-1$. By Lagrange's Theorem, the order of any element $a \in \mathbb{Z}_p^*$ divides the order of the group. Let $k$ be the order of $a$ (the smallest positive integer such that $a^k \equiv 1 \pmod p$). Then $k \mid (p-1)$, so $p-1 = k \cdot m$ for some integer $m$. Thus:
+\[
+a^{p-1} \equiv a^{km} \equiv (a^k)^m \equiv 1^m \equiv 1 \pmod p
+\]
+This elegant proof generalized readily to Euler's Theorem for any modulus $n$. \hfill $\square$
 
 \subsubsection{Limitations of Fermat's Test}
 Fermat's theorem provides only a \textbf{necessary condition} for primality, not a sufficient one:
@@ -331,10 +350,15 @@ A positive composite integer $n$ is a Carmichael number if and only if:
 \end{enumerate}
 \end{theorem}
 
-\textbf{Proof Sketch.}
-$(\Rightarrow)$ Suppose $n$ is Carmichael. If $p^2 \mid n$ for some prime $p$, then choosing $a$ as a primitive root modulo $p^2$ leads to a contradiction with $a^{n-1} \equiv 1 \pmod{p^2}$. Thus $n$ is squarefree. For each prime $p \mid n$, Fermat's Little Theorem gives $a^{p-1} \equiv 1 \pmod{p}$ for any $a$ coprime to $p$. Combined with $a^{n-1} \equiv 1 \pmod{n}$, this forces $(p-1) \mid (n-1)$.
+\textbf{Proof.}
+$(\Rightarrow)$ \textbf{Necessity.} Suppose $n$ is a Carmichael number.
+\begin{enumerate}
+    \item \textit{$n$ is square-free.} Assume for contradiction that $p^2 \mid n$ for some prime $p$. The group of units modulo $p^2$, $\mathbb{Z}_{p^2}^*$, is cyclic of order $\phi(p^2) = p(p-1)$. Let $g$ be a generator of this group. By definition, the order of $g$ modulo $p^2$ is exactly $p(p-1)$. Since $n$ is Carmichael, $g^{n-1} \equiv 1 \pmod n$, which implies $g^{n-1} \equiv 1 \pmod{p^2}$. This means the order of $g$ must divide $n-1$, so $p(p-1) \mid (n-1)$. This implies $p \mid (n-1)$. But we implicitly know $p \mid n$ (since $p^2 \mid n$), so $p$ divides both $n$ and $n-1$, forcing $p \mid 1$, a contradiction. Thus $n$ cannot have a square factor.
+    \item \textit{$(p-1) \mid (n-1)$.} Let $p$ be any prime factor of $n$. Since $n$ is square-free, $n = p \cdot k$ where $\gcd(p, k)=1$. Consider any $a$ such that $a \equiv g \pmod p$ (where $g$ is a primitive root mod $p$) and $a \equiv 1 \pmod k$. Then $\gcd(a, n)=1$. Since $n$ is Carmichael, $a^{n-1} \equiv 1 \pmod n$, which implies $a^{n-1} \equiv 1 \pmod p$. Since $a \equiv g \pmod p$, we have $g^{n-1} \equiv 1 \pmod p$. The order of $g$ is $p-1$, so $(p-1) \mid (n-1)$.
+\end{enumerate}
 
-$(\Leftarrow)$ Suppose $n$ is squarefree and $(p-1) \mid (n-1)$ for all primes $p \mid n$. For any $a$ with $\gcd(a, n) = 1$, by Fermat's theorem $a^{p-1} \equiv 1 \pmod{p}$. Since $(p-1) \mid (n-1)$, we have $a^{n-1} \equiv 1 \pmod{p}$. This holds for all prime factors of $n$, so by the Chinese Remainder Theorem, $a^{n-1} \equiv 1 \pmod{n}$. \hfill $\square$
+$(\Leftarrow)$ \textbf{Sufficiency.} Suppose $n = p_1 p_2 \cdots p_k$ is a product of distinct primes and $(p_i - 1) \mid (n-1)$ for all $i$. Let $a$ be any integer coprime to $n$. Then $\gcd(a, p_i) = 1$ for all $i$. By Fermat's Little Theorem, $a^{p_i - 1} \equiv 1 \pmod{p_i}$. Since $(p_i - 1) \mid (n-1)$, raising to the power $\frac{n-1}{p_i-1}$ gives $a^{n-1} \equiv 1 \pmod{p_i}$.
+This congruence holds for all prime factors $p_i$. Since the $p_i$ are distinct and coprime, the Chinese Remainder Theorem implies $a^{n-1} \equiv 1 \pmod n$. Thus $n$ is a Carmichael number. \hfill $\square$
 
 \subsubsection{Example: Verifying 561 is Carmichael}
 Let $n = 561 = 3 \times 11 \times 17$, so $n - 1 = 560$.
@@ -558,7 +582,26 @@ This remarkable result guarantees that for each random choice of $a$:
 \Pr[a \text{ is a strong liar}] \leq \frac{1}{4}
 \]
 
-\textbf{Proof Sketch.} The proof uses group theory. The strong liars form a proper subgroup of $(\mathbb{Z}/n\mathbb{Z})^*$. By analyzing the structure of this subgroup (particularly using the Chinese Remainder Theorem when $n$ has multiple prime factors), one can show its index is at least 4. Thus strong liars comprise at most $1/4$ of the group. \hfill $\square$
+\subsubsection{Group Theoretic Analysis of Strong Liars}
+The set of units modulo $n$, denoted $\mathbb{Z}_n^*$, is a multiplicative group. Let $L_n$ be the set of strong liars for $n$ (including 1 and -1).
+\[
+L_n = \{ a \in \mathbb{Z}_n^* : n \text{ is a strong pseudoprime to base } a \}
+\]
+It can be shown that $L_n$ is a \textbf{proper subgroup} of $\mathbb{Z}_n^*$.
+
+\textbf{Theorem (Monier-Rabin Bound):} If $n > 9$ is an odd composite integer, then:
+\[
+|L_n| \leq \frac{1}{4} |\phi(n)| < \frac{1}{4} (n-1)
+\]
+This implies the index of the subgroup $L_n$ in $\mathbb{Z}_n^*$ is at least 4: $[\mathbb{Z}_n^* : L_n] \geq 4$.
+
+\textbf{Proof Strategy.} The proof analyzes the structure of $\mathbb{Z}_n^* \cong \mathbb{Z}_{p_1^{e_1}}^* \times \cdots \times \mathbb{Z}_{p_k^{e_k}}^*$.
+\begin{enumerate}
+    \item If $n$ has a square factor (meaning $p^2 \mid n$), one can show that most bases fail the $x^2 \equiv 1$ check.
+    \item If $n$ is square-free (a product of distinct primes), the condition for $a$ to be a strong liar imposes strict constraints on $a \pmod{p_i}$ for each prime factor.
+    \item By counting the number of solutions to these constraints via the Chinese Remainder Theorem, we arrive at the bound $|L_n| / |\mathbb{Z}_n^*| \leq 1/4$.
+\end{enumerate}
+This structural insight confirms that "bad" bases are not just rare, they are confined to a small subgroup.
 
 \subsubsection{Probability Guarantees}
 With $k$ independent rounds:
@@ -609,38 +652,19 @@ $n < 341{,}550{,}071{,}728{,}321$ & $\{2, 3, 5, 7, 11, 13, 17\}$ \\
 
 For example, to deterministically test any $n < 3.5 \times 10^{14}$, we only need to check the first 7 primes as bases. This makes the algorithm both fast and \textit{guaranteed correct} within these ranges.
 
-\subsubsection{The \texorpdfstring{$O((\ln n)^2)$}{O((ln n)²)} Bound Under GRH}
-A fundamental question is: how many bases must we test to guarantee correctness for \textit{any} $n$?
+\subsubsection{The GRH Connection}
+The Generalized Riemann Hypothesis (GRH) provides a theoretical upper bound on the smallest strong witness.
 
-\begin{theorem}[Miller, 1976; conditional on GRH]
-Assuming the Generalized Riemann Hypothesis (GRH), for any composite $n$, there exists a strong witness $a$ with:
+\begin{theorem}[Miller 1976; Bach 1990]
+Assuming GRH, for any odd composite $n$, there exists a strong witness $a$ such that:
 \[
-a \leq 2(\ln n)^2
+a < 2(\ln n)^2
 \]
 \end{theorem}
 
-\textbf{Proof Intuition.} The argument relies on the distribution of quadratic residues and character sums over $(\mathbb{Z}/n\mathbb{Z})^*$. Under GRH:
-\begin{enumerate}
-    \item The smallest quadratic non-residue modulo a prime $p$ is $O((\ln p)^2)$.
-    \item For composite $n$, similar bounds apply to finding elements that expose the structure of $(\mathbb{Z}/n\mathbb{Z})^*$.
-    \item A strong witness must exist among the first $O((\ln n)^2)$ positive integers.
-\end{enumerate}
+\textbf{Proof Intuition.} The argument relies on analytic number theory, specifically the distribution of values of Dirichlet characters. Under GRH, the character sums over subgroups of $(\mathbb{Z}/n\mathbb{Z})^*$ do not "cancel out" too perfectly, forcing a non-trivial witness (a quadratic non-residue or similar element) to appear early in the sequence $2, 3, 4, \ldots$.
 
-\textbf{Practical Implication.} Under GRH, testing all bases $a \in \{2, 3, \ldots, \lfloor 2(\ln n)^2 \rfloor\}$ gives a \textit{deterministic} polynomial-time primality test. For a 1024-bit number, this means testing roughly $2 \times (1024 \times \ln 2)^2 \approx 10^6$ bases---still feasible, though slower than probabilistic testing.
-
-\subsubsection{Complexity Analysis}
-\textbf{Per-round complexity:} Each Miller-Rabin round requires computing $a^d \bmod n$ and up to $r$ squarings:
-\begin{itemize}
-    \item Modular exponentiation: $O(\log d) = O(\log n)$ multiplications
-    \item Each multiplication of $b$-bit numbers: $O(b^2)$ using schoolbook, or $O(b \log b)$ using FFT-based methods
-    \item Total per round: $O((\log n)^3)$ bit operations (schoolbook) or $O((\log n)^2 \log\log n)$ (FFT)
-\end{itemize}
-
-\textbf{Probabilistic Miller-Rabin:} With $k$ rounds, complexity is $O(k \cdot (\log n)^3)$.
-
-\textbf{Deterministic Miller-Rabin (under GRH):} Testing $O((\ln n)^2)$ bases gives complexity $O((\log n)^5)$.
-
-\textbf{Comparison with AKS:} The AKS algorithm (2002) provides unconditional deterministic polynomial-time primality testing with complexity $\tilde{O}((\log n)^{6})$, but Miller-Rabin remains faster in practice.
+\textbf{Implication.} Testing all bases $a \in [2, 2(\ln n)^2]$ yields a \textbf{deterministic polynomial-time algorithm} with complexity $\tilde{O}((\log n)^4)$. While this is theoretically faster than the unconditional AKS algorithm ($\tilde{O}((\log n)^6)$), the reliance on an unproven conjecture keeps it from being fully classified as "deterministic" in the strictest sense alongside AKS. However, for all practical purposes and known ranges, it behaves deterministically if enough bases are checked.
 
 \subsection{Implementation}
 We implemented the algorithms in Python to handle large integers automatically. Note that the following code uses Python's \texttt{random} module for simplicity; for cryptographic applications, replace with the \texttt{secrets} module.
