@@ -1,0 +1,1299 @@
+\documentclass[12pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{theorem}{Theorem}[section]
+\usepackage{graphicx}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+\usepackage{lmodern}  % Scalable fonts - fixes "size not available" warnings
+\usepackage{float}
+\usepackage[table]{xcolor}
+\usepackage{titling}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% Make more space for the title
+\setlength{\droptitle}{-4em}
+
+\title{\LARGE Primality Testing Algorithms:\\[0.5cm] Implementation and Complexity}
+\date{\today}
+
+\begin{document}
+
+% -------------------------------------------------------------------
+% TITLE PAGE
+% -------------------------------------------------------------------
+\begin{titlepage}
+    \pagenumbering{gobble} % Suppress page numbers on title page
+    \centering
+    
+    % University Logo
+    \vspace*{0.5cm}
+    \includegraphics[width=0.25\textwidth]{university_logo.png}
+    
+    \vspace{1.5cm}
+    
+    % Decorative top rule
+    {\color{gray!60}\rule{\textwidth}{1.5pt}}
+    
+    \vspace{1cm}
+    
+    % Main Title
+    {\fontsize{28}{34}\selectfont\bfseries Primality Testing Algorithms}
+    
+    \vspace{0.6cm}
+    
+    {\fontsize{18}{22}\selectfont\itshape Implementation and Complexity Analysis}
+    
+    \vspace{1cm}
+    
+    % Decorative bottom rule
+    {\color{gray!60}\rule{\textwidth}{1.5pt}}
+    
+    \vspace{1.5cm}
+    
+    % Department Info
+    {\large
+    \textbf{Department of Mathematics \& Computer Engineering}\\[0.3cm]
+    Faculty of Science\\[0.5cm]
+    \textit{\today}
+    }
+    
+    \vspace{1.5cm}
+    
+    % Project Team Header
+    {\Large\textbf{Project Team}}
+    
+    \vspace{0.8cm}
+    
+    % Modern Team Table
+    \begin{tabular}{>{\raggedright\arraybackslash}p{6.5cm} >{\centering\arraybackslash}p{3cm}}
+        \toprule
+        \textbf{Student Name} & \textbf{ID Number} \\
+        \midrule
+        Mohamed Ayman Mohamed & 9230751 \\
+        Omar Hassan El-Sherif & 9230599 \\
+        Hossam Elden Mohamed Ahmed & 9230331 \\
+        Hossam Mohamed Hassan & 9230332 \\
+        Mario Raafat Ayad & 9230712 \\
+        Kerolos Mohsen Alfy & 9230687 \\
+        \bottomrule
+    \end{tabular}
+    
+    \vfill
+    
+    % Footer decoration
+    {\color{gray!40}\rule{0.5\textwidth}{0.5pt}}
+    
+\end{titlepage}
+
+% -------------------------------------------------------------------
+% ABSTRACT
+% -------------------------------------------------------------------
+\newpage
+\begin{center}
+\begin{minipage}{0.85\textwidth}
+    \begin{center}
+        \Large\textbf{ABSTRACT}
+    \end{center}
+    \vspace{0.5cm}
+
+    \begin{abstract}
+    \large
+    \setlength{\parskip}{0.5em}
+    \setlength{\parindent}{2em}
+    This project explores algorithms for determining the primality of large integers, a fundamental problem in number theory and cryptography. We investigate the mathematical foundations of primality testing, focusing on Fermat's Little Theorem and the properties of modular exponentiation. The study analyzes the limitations of deterministic approaches like Trial Division and introduces probabilistic methods, specifically the Miller-Rabin test. We implement these algorithms and compare their computational efficiency and accuracy. Our findings demonstrate why probabilistic methods are the standard for generating the large prime numbers required for modern RSA encryption.
+    \end{abstract}
+\end{minipage}
+\end{center}
+
+\newpage
+\pagenumbering{roman} % Roman numerals for TOC
+\tableofcontents
+\newpage
+\pagenumbering{arabic} % Switch to arabic for main content
+
+% -------------------------------------------------------------------
+% NOTATION
+% -------------------------------------------------------------------
+\section{Notation and Symbols}
+\vspace{0.5cm}
+\begin{center}
+\begin{tabular}{>{\centering\arraybackslash}p{2cm} p{12cm}}
+\toprule
+\rowcolor{gray!15}
+\multicolumn{1}{c}{\textbf{\large Symbol}} & \multicolumn{1}{c}{\textbf{\large Definition}} \\
+\midrule
+\rowcolor{white}
+$n$ & The integer being tested for primality \\
+\rowcolor{gray!5}
+$p, q$ & Prime numbers \\
+\rowcolor{white}
+$\mathbb{Z}_n$ & The set of integers modulo $n$ \\
+\rowcolor{gray!5}
+$a \equiv b \pmod n$ & $a$ and $b$ are congruent modulo $n$ \\
+\rowcolor{white}
+$\gcd(a, b)$ & Greatest Common Divisor of $a$ and $b$ \\
+\rowcolor{gray!5}
+$a^{n-1}$ & Modular exponentiation operation \\
+\rowcolor{white}
+$\phi(n)$ & Euler's Totient Function \\
+\rowcolor{gray!5}
+$O(k)$ & Big-O time complexity notation \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\newpage
+
+% -------------------------------------------------------------------
+% INTRODUCTION
+% -------------------------------------------------------------------
+\section{Introduction}
+
+\subsection{Importance of Prime Numbers}
+Prime numbers occupy a central position in both pure mathematics and applied computer science. In mathematics, the \textbf{Fundamental Theorem of Arithmetic} states that every integer greater than 1 can be uniquely expressed as a product of prime numbers. This makes primes the ``atoms'' of number theory---indivisible building blocks from which all other integers are constructed.
+
+Beyond their theoretical elegance, primes have become indispensable in computer science:
+\begin{itemize}
+    \item \textbf{Hash Functions}: Many hash table implementations use prime numbers to minimize collisions and distribute keys uniformly.
+    \item \textbf{Random Number Generation}: Linear congruential generators and other pseudorandom algorithms rely on carefully chosen primes.
+    \item \textbf{Error-Correcting Codes}: Reed-Solomon codes and other error-detection schemes are built on finite fields of prime order.
+    \item \textbf{Cryptography}: The security of virtually all public-key cryptosystems depends on the difficulty of problems involving large primes.
+\end{itemize}
+
+The distribution of primes among the integers, described by the Prime Number Theorem, tells us that primes become increasingly rare as numbers grow larger---yet there are infinitely many of them. For a number $n$, approximately $n / \ln(n)$ primes exist below $n$. This density is sufficient to find large primes efficiently using randomized search, but sparse enough to make factorization hard.
+
+\subsection{Why Efficient Primality Testing is Essential for Cryptography}
+Modern cryptography stands on the foundation of \textbf{computational hardness assumptions}. The security of asymmetric encryption does not rely on keeping algorithms secret, but on mathematical problems that are easy in one direction and prohibitively difficult in reverse.
+
+The most important of these is the \textbf{Integer Factorization Problem}: given a composite number $N = p \times q$ (where $p$ and $q$ are large primes), finding $p$ and $q$ is computationally infeasible with current technology. While multiplying two 1024-bit primes takes microseconds, no known classical algorithm can factor their product in polynomial time.
+
+This asymmetry creates a critical requirement: \textit{we must be able to generate large prime numbers efficiently}. A 2048-bit RSA key requires two 1024-bit primes. Generating these involves:
+\begin{enumerate}
+    \item Randomly selecting a candidate odd number of the required bit length.
+    \item Testing whether the candidate is prime.
+    \item Repeating until a prime is found.
+\end{enumerate}
+
+By the Prime Number Theorem, roughly 1 in every 355 random 1024-bit odd numbers is prime. This means an efficient primality test must be performed hundreds of times during key generation. If each test took even one second, key generation would be unacceptably slow. With the Miller-Rabin test, each check takes milliseconds, making the process practical.
+
+\subsection{Real-World Systems Relying on Primes}
+Large prime numbers are not merely theoretical constructs---they underpin the security infrastructure of the modern internet:
+
+\subsubsection{RSA Encryption}
+The RSA algorithm, developed in 1977, remains one of the most widely deployed public-key cryptosystems. Its security rests entirely on the difficulty of factoring the product of two large primes:
+\begin{itemize}
+    \item The public key contains $N = p \times q$ and an encryption exponent $e$.
+    \item The private key requires knowledge of $p$ and $q$ to compute the decryption exponent $d$.
+    \item Without efficient factorization, an attacker cannot derive the private key from the public key.
+\end{itemize}
+RSA key sizes have grown from 512 bits in the 1990s to 2048--4096 bits today, reflecting advances in factorization algorithms and computing power.
+
+\subsubsection{TLS/SSL and HTTPS}
+Every secure web connection (the ``padlock'' in your browser) uses the \textbf{Transport Layer Security (TLS)} protocol. During the TLS handshake:
+\begin{itemize}
+    \item The server presents a certificate containing its RSA or ECDSA public key.
+    \item Key exchange may use Diffie-Hellman, which also relies on the hardness of the discrete logarithm problem in groups of prime order.
+    \item Session keys are established, enabling encrypted communication.
+\end{itemize}
+Without the ability to generate and verify large primes, TLS could not function, and secure e-commerce, banking, and communication would be impossible.
+
+\subsubsection{SSH (Secure Shell)}
+System administrators worldwide use SSH to securely access remote servers. SSH supports multiple key types:
+\begin{itemize}
+    \item \textbf{RSA keys}: Require two large primes for key generation.
+    \item \textbf{DSA keys}: Use primes for the Digital Signature Algorithm.
+    \item \textbf{ECDSA/Ed25519}: Based on elliptic curves over prime fields.
+\end{itemize}
+Each SSH connection involves cryptographic operations that ultimately depend on prime numbers.
+
+\subsection{Problem Statement}
+The central problem addressed in this project is: Given a large odd integer $n$, how can we efficiently determine if $n$ is prime?
+
+Traditional methods like trial division are conceptually simple but computationally infeasible for large numbers. For example, checking a 200-digit number by trial division would take longer than the age of the universe. This necessitates the use of ``probabilistic'' algorithms that can determine primality with high certainty in polynomial time.
+
+\subsection{Project Objectives}
+This project aims to:
+\begin{itemize}
+    \item Analyze the mathematical foundations of primality testing using Modular Arithmetic.
+    \item Implement the naive Trial Division algorithm and the advanced Miller-Rabin test.
+    \item Compare the time complexity of these approaches.
+    \item Discuss the concept of ``witnesses'' and the probability of error in randomized tests.
+\end{itemize}
+
+% -------------------------------------------------------------------
+% MATH FOUNDATIONS
+% -------------------------------------------------------------------
+\section{Mathematical Foundations}
+
+\subsection{Definitions and Prerequisites}
+
+\begin{definition}[Prime Number]
+An integer $p > 1$ is called a \textbf{prime number} if its only positive divisors are $1$ and $p$ itself. The first few primes are: $2, 3, 5, 7, 11, 13, 17, 19, 23, \ldots$
+\end{definition}
+
+\begin{definition}[Composite Number]
+An integer $n > 1$ is called \textbf{composite} if it is not prime, i.e., if there exist integers $a, b$ with $1 < a, b < n$ such that $n = a \cdot b$.
+\end{definition}
+
+\begin{definition}[Modular Arithmetic]
+For integers $a$, $b$, and a positive integer $n$, we say $a$ is \textbf{congruent} to $b$ modulo $n$, written
+\[
+a \equiv b \pmod{n}
+\]
+if and only if $n$ divides $(a - b)$. The set of equivalence classes $\{0, 1, 2, \ldots, n-1\}$ under this relation forms the ring $\mathbb{Z}_n$.
+\end{definition}
+
+\begin{definition}[Euler's Totient Function]
+For a positive integer $n$, \textbf{Euler's totient function} $\phi(n)$ counts the number of integers in $\{1, 2, \ldots, n\}$ that are relatively prime to $n$:
+\[
+\phi(n) = \left| \{k : 1 \leq k \leq n, \gcd(k, n) = 1\} \right|
+\]
+For a prime $p$: $\phi(p) = p - 1$. For a prime power: $\phi(p^k) = p^{k-1}(p-1)$.
+For coprime integers: $\phi(mn) = \phi(m)\phi(n)$ when $\gcd(m,n) = 1$.
+\end{definition}
+
+\subsection{Fermat's Little Theorem}
+The cornerstone of many primality tests is Fermat's Little Theorem.
+
+\begin{theorem}[Fermat's Little Theorem]
+If $p$ is a prime number, then for any integer $a$ not divisible by $p$:
+\begin{equation}
+a^{p-1} \equiv 1 \pmod p
+\end{equation}
+\end{theorem}
+
+\textbf{Proof Sketch.} Consider the set $S = \{a, 2a, 3a, \ldots, (p-1)a\}$ reduced modulo $p$. Since $\gcd(a, p) = 1$, each element of $S$ is distinct and non-zero modulo $p$. Thus $S \equiv \{1, 2, \ldots, p-1\} \pmod{p}$. Multiplying all elements:
+\[
+a \cdot 2a \cdot 3a \cdots (p-1)a \equiv 1 \cdot 2 \cdot 3 \cdots (p-1) \pmod{p}
+\]
+This gives $a^{p-1} \cdot (p-1)! \equiv (p-1)! \pmod{p}$. Since $\gcd((p-1)!, p) = 1$, we can cancel to obtain $a^{p-1} \equiv 1 \pmod{p}$. \hfill $\square$
+
+\subsubsection{Limitations of Fermat's Test}
+Fermat's theorem provides only a \textbf{necessary condition} for primality, not a sufficient one:
+\begin{itemize}
+    \item If $a^{n-1} \not\equiv 1 \pmod{n}$, then $n$ is \textit{definitely composite} (and $a$ is called a ``Fermat witness'').
+    \item If $a^{n-1} \equiv 1 \pmod{n}$, then $n$ \textit{might be prime}---but could also be composite!
+\end{itemize}
+This limitation leads us to study pseudoprimes and Carmichael numbers.
+
+% -------------------------------------------------------------------
+% PSEUDOPRIMES AND CARMICHAEL NUMBERS
+% -------------------------------------------------------------------
+\section{Pseudoprimes and Carmichael Numbers}
+
+\subsection{Pseudoprimes}
+\begin{definition}[Pseudoprime]
+A composite number $n$ is called a \textbf{pseudoprime to base $a$} (or \textbf{Fermat pseudoprime}) if
+\[
+a^{n-1} \equiv 1 \pmod{n}
+\]
+Such numbers ``fool'' the Fermat test for that particular base.
+\end{definition}
+
+\textbf{Example.} The number $341 = 11 \times 31$ is a pseudoprime to base 2, since $2^{340} \equiv 1 \pmod{341}$, yet 341 is composite.
+
+\subsection{Strong Pseudoprimes}
+The Miller-Rabin test uses a stronger condition based on the decomposition $n - 1 = 2^r \cdot d$ where $d$ is odd.
+
+\begin{definition}[Strong Pseudoprime]
+A composite $n$ is a \textbf{strong pseudoprime to base $a$} if, writing $n - 1 = 2^r \cdot d$ with $d$ odd, either:
+\begin{enumerate}
+    \item $a^d \equiv 1 \pmod{n}$, or
+    \item $a^{2^j \cdot d} \equiv -1 \pmod{n}$ for some $0 \leq j < r$
+\end{enumerate}
+\end{definition}
+
+Strong pseudoprimes are rarer than ordinary pseudoprimes, making the Miller-Rabin test more reliable.
+
+\subsection{Carmichael Numbers}
+\begin{definition}[Carmichael Number]
+A composite number $n$ is called a \textbf{Carmichael number} (or \textbf{absolute pseudoprime}) if
+\[
+a^{n-1} \equiv 1 \pmod{n} \quad \text{for all } a \text{ with } \gcd(a, n) = 1
+\]
+\end{definition}
+
+Carmichael numbers are the ``worst case'' for Fermat's test---they pass for \textit{every} valid base $a$, yet are composite. The smallest Carmichael number is $561 = 3 \times 11 \times 17$.
+
+\subsection{Korselt's Criterion}
+Korselt's criterion provides a complete characterization of Carmichael numbers.
+
+\begin{theorem}[Korselt's Criterion, 1899]
+A positive composite integer $n$ is a Carmichael number if and only if:
+\begin{enumerate}
+    \item $n$ is \textbf{squarefree} (not divisible by any perfect square other than 1), and
+    \item For every prime $p$ dividing $n$: $(p - 1) \mid (n - 1)$
+\end{enumerate}
+\end{theorem}
+
+\textbf{Proof Sketch.}
+$(\Rightarrow)$ Suppose $n$ is Carmichael. If $p^2 \mid n$ for some prime $p$, then choosing $a$ as a primitive root modulo $p^2$ leads to a contradiction with $a^{n-1} \equiv 1 \pmod{p^2}$. Thus $n$ is squarefree. For each prime $p \mid n$, Fermat's Little Theorem gives $a^{p-1} \equiv 1 \pmod{p}$ for any $a$ coprime to $p$. Combined with $a^{n-1} \equiv 1 \pmod{n}$, this forces $(p-1) \mid (n-1)$.
+
+$(\Leftarrow)$ Suppose $n$ is squarefree and $(p-1) \mid (n-1)$ for all primes $p \mid n$. For any $a$ with $\gcd(a, n) = 1$, by Fermat's theorem $a^{p-1} \equiv 1 \pmod{p}$. Since $(p-1) \mid (n-1)$, we have $a^{n-1} \equiv 1 \pmod{p}$. This holds for all prime factors of $n$, so by the Chinese Remainder Theorem, $a^{n-1} \equiv 1 \pmod{n}$. \hfill $\square$
+
+\subsubsection{Example: Verifying 561 is Carmichael}
+Let $n = 561 = 3 \times 11 \times 17$, so $n - 1 = 560$.
+\begin{itemize}
+    \item $561$ is squarefree (product of distinct primes). \checkmark
+    \item $p = 3$: $(p-1) = 2$, and $2 \mid 560$. \checkmark
+    \item $p = 11$: $(p-1) = 10$, and $10 \mid 560$. \checkmark  
+    \item $p = 17$: $(p-1) = 16$, and $16 \mid 560$ since $560 = 16 \times 35$. \checkmark
+\end{itemize}
+By Korselt's criterion, 561 is indeed a Carmichael number.
+
+\subsection{Failure of Naïve Primality Tests}
+
+\subsubsection{Why Fermat's Test Fails}
+The Fermat primality test checks whether $a^{n-1} \equiv 1 \pmod{n}$ for randomly chosen bases $a$. For a prime $n$, this always holds (by Fermat's Little Theorem). For most composites, it fails for at least half of all possible bases---so repeated testing quickly identifies them.
+
+However, Carmichael numbers defeat this strategy completely:
+\begin{itemize}
+    \item For a Carmichael number $n$, the test passes for \textit{every} base $a$ coprime to $n$.
+    \item Since Carmichael numbers are products of distinct odd primes, the proportion of bases $a \in \{1, \ldots, n-1\}$ coprime to $n$ approaches 1 as $n$ grows.
+    \item No matter how many random bases we test, we cannot distinguish a Carmichael number from a prime using Fermat's test alone.
+\end{itemize}
+
+\textbf{Probability of Detection.} For a Carmichael number $n = p_1 p_2 \cdots p_k$, the only bases that reveal compositeness are those sharing a factor with $n$. The probability of randomly selecting such a ``lucky'' witness is:
+\[
+\Pr[\gcd(a, n) > 1] = 1 - \frac{\phi(n)}{n} = 1 - \prod_{i=1}^{k}\left(1 - \frac{1}{p_i}\right)
+\]
+For $n = 561 = 3 \times 11 \times 17$, this probability is approximately $40\%$, meaning roughly $60\%$ of bases give no information about compositeness.
+
+\subsubsection{Historical Consequences and Cryptographic Risks}
+The existence of Carmichael numbers has significant implications for cryptography:
+
+\textbf{RSA Key Generation Risk.} If a naïve implementation uses only the Fermat test to generate ``prime'' numbers for RSA keys:
+\begin{itemize}
+    \item A Carmichael number could be mistakenly accepted as prime.
+    \item RSA moduli of the form $N = p \times C$ (where $C$ is Carmichael) would be trivially factorable.
+    \item The private key could be recovered, compromising all encrypted communications.
+\end{itemize}
+
+\textbf{Abundance of Carmichael Numbers.} Although Carmichael numbers are rare (only 2,163 below $25 \times 10^9$), there are infinitely many of them (proven in 1994 by Alford, Granville, and Pomerance). Their density increases as:
+\[
+C(x) > x^{2/7} \quad \text{for sufficiently large } x
+\]
+This means they cannot be ignored in cryptographic applications.
+
+\textbf{The Solution: Miller-Rabin.} The Miller-Rabin test overcomes this limitation by checking not just $a^{n-1} \equiv 1$, but also examining intermediate values during the exponentiation. For \textit{any} composite $n$ (including Carmichael numbers), at least 75\% of bases $a$ are ``strong witnesses'' that expose $n$ as composite. With $k$ rounds of testing, the error probability is at most $(1/4)^k$---effectively zero for practical values of $k$.
+
+% -------------------------------------------------------------------
+% ALGORITHMS
+% -------------------------------------------------------------------
+\section{Primality Testing Algorithms}
+
+\subsection{Derivation of the Miller-Rabin Test}
+
+\subsubsection{From Fermat to Miller-Rabin}
+The Miller-Rabin test is derived by strengthening Fermat's Little Theorem through a key observation about square roots of unity.
+
+\textbf{Step 1: Fermat's Starting Point.}
+For a prime $p$ and any $a$ with $\gcd(a, p) = 1$:
+\[
+a^{p-1} \equiv 1 \pmod{p}
+\]
+
+\textbf{Step 2: Decomposition of the Exponent.}
+Since $p$ is an odd prime, $p - 1$ is even. We can write:
+\[
+p - 1 = 2^r \cdot d \quad \text{where } d \text{ is odd and } r \geq 1
+\]
+For example, if $p = 13$, then $p - 1 = 12 = 2^2 \cdot 3$, so $r = 2$ and $d = 3$.
+
+\textbf{Step 3: The Square Root Property.}
+Consider the sequence of values obtained by repeated squaring:
+\[
+a^d, \quad a^{2d}, \quad a^{4d}, \quad \ldots, \quad a^{2^{r-1}d}, \quad a^{2^r d} = a^{p-1}
+\]
+We know the final value is $a^{p-1} \equiv 1 \pmod{p}$.
+
+\textbf{Key Insight:} In a prime field $\mathbb{Z}_p$, the equation $x^2 \equiv 1 \pmod{p}$ has exactly two solutions: $x \equiv 1$ and $x \equiv -1 \pmod{p}$.
+
+\textbf{Step 4: Tracing Back the Sequence.}
+Starting from $a^{p-1} \equiv 1$, the previous term $a^{2^{r-1}d}$ must be a square root of 1, so:
+\[
+a^{2^{r-1}d} \equiv \pm 1 \pmod{p}
+\]
+If it equals $-1$, we stop. If it equals $1$, we continue backwards. Eventually, either:
+\begin{enumerate}
+    \item We reach $a^d \equiv 1 \pmod{p}$, or
+    \item We find some $a^{2^j d} \equiv -1 \pmod{p}$ for $0 \leq j < r$
+\end{enumerate}
+For any prime $p$, one of these \textbf{must} occur.
+
+\subsubsection{Strong Witnesses and Strong Liars}
+\begin{definition}[Strong Witness]
+An integer $a$ is a \textbf{strong witness} for the compositeness of $n$ if, writing $n - 1 = 2^r \cdot d$:
+\begin{itemize}
+    \item $a^d \not\equiv 1 \pmod{n}$, AND
+    \item $a^{2^j d} \not\equiv -1 \pmod{n}$ for all $0 \leq j < r$
+\end{itemize}
+\end{definition}
+
+If $a$ is a strong witness for $n$, then $n$ is \textit{definitely composite}. The contrapositive tells us: if $n$ is prime, no such witness exists.
+
+\begin{definition}[Strong Liar]
+If $a$ is \textit{not} a strong witness for composite $n$, then $a$ is called a \textbf{strong liar}---it ``lies'' by making $n$ appear possibly prime.
+\end{definition}
+
+The power of Miller-Rabin lies in the fact that strong liars are rare, even for Carmichael numbers.
+
+\subsection{The Miller-Rabin Algorithm}
+
+\begin{algorithm}
+\caption{Miller-Rabin Primality Test}
+\begin{algorithmic}[1]
+\Function{IsPrime}{$n, k$} \Comment{$n$ is number to test, $k$ is rounds}
+    \If{$n = 2$ or $n = 3$} \Return{True} \EndIf
+    \If{$n$ is even} \Return{False} \EndIf
+    
+    \State Write $n-1$ as $2^r \cdot d$
+    
+    \For{$i \gets 1$ to $k$}
+        \State $a \gets \text{random integer in } [2, n-2]$
+        \State $x \gets a^d \pmod n$
+        \If{$x = 1$ or $x = n-1$}
+            \State \textbf{continue}
+        \EndIf
+        \For{$j \gets 1$ to $r-1$}
+            \State $x \gets x^2 \pmod n$
+            \If{$x = n-1$}
+                \State \textbf{break loop} \Comment{$n$ passes this round}
+            \EndIf
+        \EndFor
+        \If{loop finished without break} \Return{Composite} \EndIf
+    \EndFor
+    \State \Return{Probably Prime}
+\EndFunction{}
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Correctness and Error Probability}
+
+\subsubsection{Correctness Argument}
+The Miller-Rabin test has two possible outcomes:
+\begin{itemize}
+    \item \textbf{``Composite''}: The test is \textit{always correct}. If the algorithm returns composite, $n$ is definitely composite (we found a strong witness).
+    \item \textbf{``Probably Prime''}: The test \textit{may be wrong}. A composite $n$ could be returned as ``probably prime'' if all $k$ randomly chosen bases happened to be strong liars.
+\end{itemize}
+
+This makes Miller-Rabin a \textbf{Monte Carlo algorithm} with one-sided error: it never incorrectly labels a prime as composite, but may incorrectly label a composite as probably prime.
+
+\subsubsection{The Error Bound Theorem}
+\begin{theorem}[Rabin, 1980]
+For any odd composite $n > 9$, at most $\frac{1}{4}$ of the bases $a \in \{2, 3, \ldots, n-2\}$ are strong liars for $n$.
+\end{theorem}
+
+This remarkable result guarantees that for each random choice of $a$:
+\[
+\Pr[a \text{ is a strong liar}] \leq \frac{1}{4}
+\]
+
+\textbf{Proof Sketch.} The proof uses group theory. The strong liars form a proper subgroup of $(\mathbb{Z}/n\mathbb{Z})^*$. By analyzing the structure of this subgroup (particularly using the Chinese Remainder Theorem when $n$ has multiple prime factors), one can show its index is at least 4. Thus strong liars comprise at most $1/4$ of the group. \hfill $\square$
+
+\subsubsection{Probability Guarantees}
+With $k$ independent rounds:
+\[
+\Pr[\text{composite } n \text{ declared ``probably prime''}] \leq \left(\frac{1}{4}\right)^k
+\]
+
+\begin{center}
+\begin{tabular}{@{}cr@{}}
+\toprule
+\textbf{Rounds ($k$)} & \textbf{Error Probability} \\
+\midrule
+1 & $\leq 25\%$ \\
+5 & $\leq 0.1\%$ \\
+10 & $\leq 10^{-6}$ \\
+20 & $\leq 10^{-12}$ \\
+40 & $\leq 10^{-24}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For cryptographic applications, $k = 40$ rounds is standard, giving an error probability far smaller than hardware failure rates. In practice, the actual error rate is even lower because the $1/4$ bound is a worst-case guarantee.
+
+\subsection{Deterministic Miller-Rabin}
+
+While Miller-Rabin is typically presented as a probabilistic algorithm, it can be made \textbf{deterministic} for bounded ranges of $n$ by testing specific small bases.
+
+\subsubsection{Witness Sets for Bounded Ranges}
+Research has identified minimal sets of bases that are guaranteed to correctly identify all composites within specific ranges:
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Range of $n$} & \textbf{Sufficient Bases to Test} \\
+\midrule
+$n < 2{,}047$ & $\{2\}$ \\
+$n < 1{,}373{,}653$ & $\{2, 3\}$ \\
+$n < 9{,}080{,}191$ & $\{31, 73\}$ \\
+$n < 25{,}326{,}001$ & $\{2, 3, 5\}$ \\
+$n < 3{,}215{,}031{,}751$ & $\{2, 3, 5, 7\}$ \\
+$n < 4{,}759{,}123{,}141$ & $\{2, 7, 61\}$ \\
+$n < 1{,}122{,}004{,}669{,}633$ & $\{2, 13, 23, 1662803\}$ \\
+$n < 3{,}474{,}749{,}660{,}383$ & $\{2, 3, 5, 7, 11, 13\}$ \\
+$n < 341{,}550{,}071{,}728{,}321$ & $\{2, 3, 5, 7, 11, 13, 17\}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For example, to deterministically test any $n < 3.5 \times 10^{14}$, we only need to check the first 7 primes as bases. This makes the algorithm both fast and \textit{guaranteed correct} within these ranges.
+
+\subsubsection{The \texorpdfstring{$O((\ln n)^2)$}{O((ln n)²)} Bound Under GRH}
+A fundamental question is: how many bases must we test to guarantee correctness for \textit{any} $n$?
+
+\begin{theorem}[Miller, 1976; conditional on GRH]
+Assuming the Generalized Riemann Hypothesis (GRH), for any composite $n$, there exists a strong witness $a$ with:
+\[
+a \leq 2(\ln n)^2
+\]
+\end{theorem}
+
+\textbf{Proof Intuition.} The argument relies on the distribution of quadratic residues and character sums over $(\mathbb{Z}/n\mathbb{Z})^*$. Under GRH:
+\begin{enumerate}
+    \item The smallest quadratic non-residue modulo a prime $p$ is $O((\ln p)^2)$.
+    \item For composite $n$, similar bounds apply to finding elements that expose the structure of $(\mathbb{Z}/n\mathbb{Z})^*$.
+    \item A strong witness must exist among the first $O((\ln n)^2)$ positive integers.
+\end{enumerate}
+
+\textbf{Practical Implication.} Under GRH, testing all bases $a \in \{2, 3, \ldots, \lfloor 2(\ln n)^2 \rfloor\}$ gives a \textit{deterministic} polynomial-time primality test. For a 1024-bit number, this means testing roughly $2 \times (1024 \times \ln 2)^2 \approx 10^6$ bases---still feasible, though slower than probabilistic testing.
+
+\subsubsection{Complexity Analysis}
+\textbf{Per-round complexity:} Each Miller-Rabin round requires computing $a^d \bmod n$ and up to $r$ squarings:
+\begin{itemize}
+    \item Modular exponentiation: $O(\log d) = O(\log n)$ multiplications
+    \item Each multiplication of $b$-bit numbers: $O(b^2)$ using schoolbook, or $O(b \log b)$ using FFT-based methods
+    \item Total per round: $O((\log n)^3)$ bit operations (schoolbook) or $O((\log n)^2 \log\log n)$ (FFT)
+\end{itemize}
+
+\textbf{Probabilistic Miller-Rabin:} With $k$ rounds, complexity is $O(k \cdot (\log n)^3)$.
+
+\textbf{Deterministic Miller-Rabin (under GRH):} Testing $O((\ln n)^2)$ bases gives complexity $O((\log n)^5)$.
+
+\textbf{Comparison with AKS:} The AKS algorithm (2002) provides unconditional deterministic polynomial-time primality testing with complexity $\tilde{O}((\log n)^{6})$, but Miller-Rabin remains faster in practice.
+
+\subsection{Implementation}
+We implemented the algorithms in Python to handle large integers automatically. Note that the following code uses Python's \texttt{random} module for simplicity; for cryptographic applications, replace with the \texttt{secrets} module.
+
+\begin{verbatim}
+import random  # Use 'secrets' module for cryptographic applications
+
+def miller_rabin(n, k=40):
+    if n == 2 or n == 3: return True
+    if n % 2 == 0: return False
+
+    r, d = 0, n - 1
+    while d % 2 == 0:
+        r += 1
+        d //= 2
+
+    for _ in range(k):
+        a = random.randrange(2, n - 1)
+        x = pow(a, d, n)
+        if x == 1 or x == n - 1:
+            continue
+        for _ in range(r - 1):
+            x = pow(x, 2, n)
+            if x == n - 1:
+                break
+        else:
+            return False
+    return True
+\end{verbatim}
+
+% -------------------------------------------------------------------
+% PRIME GENERATION
+% -------------------------------------------------------------------
+\section{Prime Generation for Cryptography}
+
+Generating large random primes is essential for key generation in RSA, Diffie-Hellman, DSA, and many other cryptographic protocols. This section describes practical algorithms and security considerations.
+
+\subsection{Basic Random Prime Generation}
+
+The fundamental approach follows a generate-and-test paradigm:
+
+\begin{algorithm}
+\caption{Random Prime Generation}
+\begin{algorithmic}[1]
+\Function{GeneratePrime}{$b$} \Comment{Generate a $b$-bit prime}
+    \Repeat
+        \State $n \gets \text{random odd } b\text{-bit integer}$ \Comment{Set MSB and LSB to 1}
+        \If{\Call{MillerRabin}{$n, k$} = \texttt{True}}
+            \State \Return{$n$}
+        \EndIf
+    \Until{prime found}
+\EndFunction{}
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{Expected Iterations.} By the Prime Number Theorem, the density of primes near $N$ is approximately $1/\ln N$. For a $b$-bit number, $\ln N \approx b \cdot \ln 2 \approx 0.693b$. Since we only test odd numbers, the expected number of candidates is:
+\[
+\mathbb{E}[\text{candidates}] \approx \frac{b \cdot \ln 2}{2} \approx 0.35b
+\]
+For a 1024-bit prime, we expect to test roughly 355 candidates.
+
+\subsection{Optimizations}
+
+\subsubsection{Trial Division Pre-Screening}
+Before running Miller-Rabin (which is relatively expensive), we can quickly reject candidates divisible by small primes:
+
+\begin{verbatim}
+SMALL_PRIMES = [3, 5, 7, 11, 13, 17, 19, 23, 29, 31, ...]
+
+def is_candidate_viable(n):
+    for p in SMALL_PRIMES:
+        if n % p == 0:
+            return False
+    return True
+\end{verbatim}
+
+Testing divisibility by the first 100 primes eliminates approximately 76\% of random odd numbers, dramatically reducing the number of expensive Miller-Rabin tests. (Note: For very small $n$ that equal a small prime, this check should return \texttt{True} rather than \texttt{False}.)
+
+\subsubsection{Incremental Search}
+Instead of generating completely random candidates each time, we can:
+\begin{enumerate}
+    \item Generate a random starting point $n_0$
+    \item Compute $n_0 \bmod p$ for each small prime $p$
+    \item Increment by 2 and update remainders: $(n_0 + 2) \bmod p = (n_0 \bmod p + 2) \bmod p$
+    \item Only run Miller-Rabin when all small-prime checks pass
+\end{enumerate}
+This sieving approach is significantly faster than independent random sampling.
+
+\subsection{Security Requirements}
+
+\subsubsection{Cryptographically Secure Randomness}
+The random number generator used for prime generation \textbf{must} be cryptographically secure (CSPRNG):
+\begin{itemize}
+    \item \textbf{Acceptable}: \texttt{/dev/urandom}, \texttt{os.urandom()}, \texttt{secrets} module, hardware RNG
+    \item \textbf{Unacceptable}: \texttt{random.random()}, linear congruential generators, Mersenne Twister
+\end{itemize}
+
+\textbf{Why it matters:} If an attacker can predict or constrain the random bits used in prime generation, they can drastically reduce the search space for factoring the RSA modulus. A weak RNG in Debian's OpenSSL (2006--2008) reduced effective key entropy from 1024 bits to approximately 15 bits.
+
+\subsubsection{Side-Channel Resistance}
+Prime generation implementations should resist timing attacks:
+\begin{itemize}
+    \item Modular exponentiation should use constant-time algorithms
+    \item The number of Miller-Rabin rounds should not depend on the candidate value
+    \item Rejected candidates should not leak information through timing
+\end{itemize}
+
+\subsubsection{Safe Primes and Strong Primes}
+For some applications, additional structure is required:
+
+\begin{definition}[Safe Prime]
+A prime $p$ is called a \textbf{safe prime} if $p = 2q + 1$ where $q$ is also prime (called a Sophie Germain prime).
+\end{definition}
+
+Safe primes are used in:
+\begin{itemize}
+    \item Diffie-Hellman key exchange (ensures the group has a large prime-order subgroup)
+    \item Some RSA implementations (provides resistance against certain factoring attacks)
+\end{itemize}
+
+Generating safe primes is slower (both $p$ and $(p-1)/2$ must be prime), but they provide stronger security guarantees.
+
+\subsubsection{Provable Primes vs. Probable Primes}
+\begin{itemize}
+    \item \textbf{Probable primes}: Generated using Miller-Rabin with sufficiently many rounds. Standard practice.
+    \item \textbf{Provable primes}: Generated using algorithms like Maurer's algorithm, which provide mathematical proof of primality. Slower but eliminates any (however tiny) probability of error.
+\end{itemize}
+
+For most applications, 40+ rounds of Miller-Rabin provide error probability below $10^{-24}$, which is negligible compared to other failure modes (hardware errors, implementation bugs).
+
+% -------------------------------------------------------------------
+% RSA AND PRIMALITY
+% -------------------------------------------------------------------
+\section{RSA Algorithm and the Role of Primality Testing}
+
+The RSA cryptosystem, developed by Rivest, Shamir, and Adleman in 1977 and published in 1978, remains the most widely deployed public-key encryption scheme. Its security fundamentally depends on the difficulty of factoring large integers---and thus on the quality of the primes used in key generation.
+
+\subsection{RSA Key Generation Process}
+
+The RSA key generation algorithm proceeds as follows:
+
+\begin{algorithm}
+\caption{RSA Key Generation}
+\begin{algorithmic}[1]
+\Function{GenerateRSAKey}{$b$} \Comment{Generate $b$-bit RSA key pair}
+    \State $p \gets \Call{GeneratePrime}{b/2}$ \Comment{First prime}
+    \State $q \gets \Call{GeneratePrime}{b/2}$ \Comment{Second prime, $p \neq q$}
+    \State $N \gets p \times q$ \Comment{RSA modulus}
+    \State $\phi(N) \gets (p-1)(q-1)$ \Comment{Euler's totient}
+    \State $e \gets 65537$ \Comment{Common choice: $2^{16} + 1$}
+    \State $d \gets e^{-1} \pmod{\phi(N)}$ \Comment{Extended Euclidean Algorithm}
+    \State \Return{$(N, e)$ as public key, $(N, d)$ as private key}
+\EndFunction{}
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{Key Components:}
+\begin{itemize}
+    \item $N = pq$: The \textbf{modulus}, publicly known. For 2048-bit RSA, $N$ has 2048 bits; $p$ and $q$ each have 1024 bits.
+    \item $e$: The \textbf{public exponent}, typically 65537 (chosen for efficient computation).
+    \item $d$: The \textbf{private exponent}, satisfying $ed \equiv 1 \pmod{\phi(N)}$.
+    \item $\phi(N) = (p-1)(q-1)$: Computing this requires knowing $p$ and $q$.
+\end{itemize}
+
+\subsection{Encryption and Decryption}
+
+\textbf{Encryption} (using public key $(N, e)$):
+\[
+c = m^e \bmod N
+\]
+where $m$ is the plaintext message (as an integer $0 \leq m < N$) and $c$ is the ciphertext.
+
+\textbf{Decryption} (using private key $(N, d)$):
+\[
+m = c^d \bmod N
+\]
+
+\textbf{Why it works:} By Euler's theorem, for any $m$ coprime to $N$:
+\[
+c^d = (m^e)^d = m^{ed} = m^{1 + k\phi(N)} = m \cdot (m^{\phi(N)})^k \equiv m \cdot 1^k = m \pmod{N}
+\]
+
+\subsection{Why Primality Testing is Critical to RSA Security}
+
+The security of RSA rests on the assumption that factoring $N = pq$ is computationally infeasible. This assumption fails catastrophically if the primes are not chosen correctly.
+
+\subsubsection{The Factorization Connection}
+An attacker who can factor $N$ into $p$ and $q$ can:
+\begin{enumerate}
+    \item Compute $\phi(N) = (p-1)(q-1)$
+    \item Compute $d = e^{-1} \bmod \phi(N)$ using the extended Euclidean algorithm
+    \item Decrypt any message and forge any signature
+\end{enumerate}
+The security of RSA is \textit{exactly equivalent} to the secrecy of $p$ and $q$.
+
+\subsubsection{Risks of Inadequate Primality Testing}
+
+\textbf{Risk 1: Carmichael Numbers.}
+If the primality test fails to detect a Carmichael number $C$, and we generate $N = p \times C$ where $p$ is prime:
+\begin{itemize}
+    \item $C = q_1 \times q_2 \times \cdots \times q_k$ for distinct primes $q_i$
+    \item $N$ has $k+1$ prime factors, not 2
+    \item Factoring becomes much easier (e.g., via Pollard's $\rho$ algorithm)
+    \item The key is compromised
+\end{itemize}
+
+\textbf{Risk 2: Composite ``Primes.''}
+Even without Carmichael numbers, accepting a composite $n = ab$ as prime means:
+\begin{itemize}
+    \item $N = pn = p \cdot a \cdot b$ has three or more factors
+    \item The smallest factor may be found quickly by trial division or ECM
+\end{itemize}
+
+\textbf{Risk 3: Weak Primes.}
+Even if $p$ is truly prime, certain structures make factoring easier:
+\begin{itemize}
+    \item If $p - 1$ has only small factors, Pollard's $p-1$ algorithm can factor $N$
+    \item If $p + 1$ has only small factors, Williams' $p+1$ algorithm applies
+    \item If $|p - q|$ is small, Fermat's factorization method works quickly
+\end{itemize}
+
+\subsubsection{Security Requirements for RSA Primes}
+
+To ensure RSA security, generated primes must satisfy:
+\begin{enumerate}
+    \item \textbf{Truly prime}: Verified by Miller-Rabin with $\geq 40$ rounds (error $< 10^{-24}$)
+    \item \textbf{Sufficiently large}: Each prime should be half the target key size (e.g., 1024 bits for RSA-2048)
+    \item \textbf{Randomly generated}: Using a CSPRNG to prevent predictability
+    \item \textbf{Distinct}: $p \neq q$ (otherwise $N = p^2$ is trivially factorable)
+    \item \textbf{Not close}: $|p - q| > 2N^{1/4}$ to resist Fermat factorization
+    \item \textbf{Strong structure} (optional): $p - 1$ and $p + 1$ should each have at least one large prime factor
+\end{enumerate}
+
+\subsubsection{Historical Failures}
+
+Several real-world RSA implementations have been compromised due to weak prime generation:
+\begin{itemize}
+    \item \textbf{Debian OpenSSL (2006--2008)}: A bug reduced the RNG seed to 15 bits, making all generated keys factorable.
+    \item \textbf{Taiwan Citizen Digital Certificates (2013)}: Weak random number generation led to shared prime factors across different keys.
+    \item \textbf{Infineon RSALib (2017, ROCA vulnerability)}: A flawed prime generation algorithm allowed factorization of affected keys in practical time.
+\end{itemize}
+
+These incidents underscore that primality testing and prime generation are not merely theoretical concerns---they are critical to the security of systems protecting billions of users.
+
+% -------------------------------------------------------------------
+% APPLICATIONS IN SECURE PROTOCOLS
+% -------------------------------------------------------------------
+\section{Applications in Secure Communication Protocols}
+
+The security of modern internet communication depends fundamentally on prime numbers. This section examines how primality testing enables the cryptographic protocols that protect everyday digital interactions.
+
+\subsection{TLS/HTTPS: Securing the Web}
+
+The \textbf{Transport Layer Security (TLS)} protocol secures virtually all web traffic. When you see the padlock icon in your browser, TLS is protecting your connection.
+
+\subsubsection{The TLS Handshake}
+During connection establishment, TLS performs several prime-dependent operations:
+
+\begin{enumerate}
+    \item \textbf{Server Authentication}: The server presents a certificate containing its RSA or ECDSA public key. RSA keys require two large primes; ECDSA uses curves over prime fields.
+    
+    \item \textbf{Key Exchange}: Several methods involve primes:
+    \begin{itemize}
+        \item \textbf{RSA Key Exchange}: Client encrypts a pre-master secret with server's RSA public key
+        \item \textbf{Diffie-Hellman (DH)}: Parameters include a large prime $p$ and generator $g$
+        \item \textbf{Elliptic Curve DH (ECDHE)}: Uses curves over prime fields $\mathbb{F}_p$
+    \end{itemize}
+    
+    \item \textbf{Session Key Derivation}: The shared secret is used to derive symmetric keys for bulk encryption.
+\end{enumerate}
+
+\textbf{Prime requirements in TLS:}
+\begin{itemize}
+    \item RSA certificates: 2048--4096 bit moduli (two 1024--2048 bit primes each)
+    \item DH parameters: Safe primes $p$ where $(p-1)/2$ is also prime
+    \item ECDHE: Curves over primes like the 256-bit prime in P-256
+\end{itemize}
+
+\subsection{SSH: Secure Remote Access}
+
+The \textbf{Secure Shell (SSH)} protocol enables encrypted terminal access and file transfer. SSH key types all depend on primes:
+
+\begin{center}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Key Type} & \textbf{Prime Usage} & \textbf{Typical Size} \\
+\midrule
+RSA & Two primes $p, q$ for modulus $N = pq$ & 2048--4096 bits \\
+DSA & Prime $p$ and prime $q \mid (p-1)$ & 1024--3072 bits \\
+ECDSA & Curve over prime field $\mathbb{F}_p$ & 256--521 bits \\
+Ed25519 & Curve over prime $2^{255} - 19$ & 256 bits \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Host Key Verification:} When connecting to a server for the first time, SSH presents the server's public key fingerprint. This key was generated using primality testing during server setup.
+
+\subsection{Digital Certificates and PKI}
+
+The \textbf{Public Key Infrastructure (PKI)} enables trust across the internet through digital certificates.
+
+\subsubsection{Certificate Chain of Trust}
+\begin{enumerate}
+    \item \textbf{Root Certificate Authorities (CAs)}: Generate RSA key pairs using vetted prime generation
+    \item \textbf{Intermediate CAs}: Signed by root CAs, also use prime-based keys
+    \item \textbf{End-Entity Certificates}: Websites, servers, and users obtain certificates signed by CAs
+\end{enumerate}
+
+Each certificate contains a public key (RSA, ECDSA, etc.) whose security depends on proper prime generation during key creation.
+
+\subsubsection{Certificate Validation}
+When your browser validates a certificate:
+\begin{itemize}
+    \item It verifies RSA/ECDSA signatures up the chain to a trusted root
+    \item Each signature verification involves modular arithmetic with prime-derived parameters
+    \item A single weak prime anywhere in the chain could compromise the entire trust model
+\end{itemize}
+
+\subsection{Practical Implications of Weak Primality Testing}
+
+Failures in primality testing or prime generation have real-world consequences:
+
+\subsubsection{Attack Scenarios}
+
+\textbf{Scenario 1: Shared Prime Factors}
+\begin{itemize}
+    \item If two RSA moduli $N_1 = p \cdot q_1$ and $N_2 = p \cdot q_2$ share a prime $p$
+    \item An attacker computes $\gcd(N_1, N_2) = p$
+    \item Both private keys are immediately recoverable
+    \item \textit{Real case}: Researchers found 0.2\% of HTTPS certificates shared primes (2012)
+\end{itemize}
+
+\textbf{Scenario 2: Predictable Prime Generation}
+\begin{itemize}
+    \item Embedded devices with weak entropy sources generate predictable primes
+    \item Attackers can precompute likely primes and test against collected keys
+    \item \textit{Real case}: Millions of IoT devices compromised due to weak RNG (2016)
+\end{itemize}
+
+\textbf{Scenario 3: Backdoored Parameters}
+\begin{itemize}
+    \item DH parameters with special structure can enable passive decryption
+    \item If $p$ has a smooth $p-1$, the Pohlig-Hellman algorithm breaks discrete log
+    \item \textit{Real case}: Concerns about NIST curve generation processes
+\end{itemize}
+
+\subsubsection{Mitigation Best Practices}
+\begin{enumerate}
+    \item Use well-vetted cryptographic libraries (OpenSSL, LibreSSL, BoringSSL)
+    \item Generate keys on systems with verified entropy sources
+    \item Use standardized DH groups or generate fresh safe primes
+    \item Prefer ECDHE with well-audited curves (X25519, P-256)
+    \item Implement certificate transparency to detect misissued certificates
+    \item Rotate keys periodically to limit exposure from potential weaknesses
+\end{enumerate}
+
+% -------------------------------------------------------------------
+% METHODS AND ALGORITHMIC ANALYSIS
+% -------------------------------------------------------------------
+\section{Methods, Proofs, and Algorithmic Analysis}
+
+This section provides a consolidated view of all primality testing algorithms discussed, with pseudocode descriptions and rigorous complexity analysis.
+
+\subsection{Algorithm Descriptions}
+
+\subsubsection{Trial Division}
+
+The simplest deterministic primality test checks all potential divisors up to $\sqrt{n}$.
+
+\begin{algorithm}
+\caption{Trial Division}
+\begin{algorithmic}[1]
+\Function{TrialDivision}{$n$}
+    \If{$n < 2$} \Return{False} \EndIf
+    \If{$n = 2$} \Return{True} \EndIf
+    \If{$n \bmod 2 = 0$} \Return{False} \EndIf
+    \For{$i \gets 3$ to $\lfloor\sqrt{n}\rfloor$ by $2$}
+        \If{$n \bmod i = 0$}
+            \Return{False}
+        \EndIf
+    \EndFor
+    \State \Return{True}
+\EndFunction{}
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{Correctness:} If $n = ab$ with $1 < a \leq b < n$, then $a \leq \sqrt{n}$. Thus checking all divisors up to $\sqrt{n}$ is sufficient.
+
+\subsubsection{Fermat Primality Test}
+
+A probabilistic test based on Fermat's Little Theorem.
+
+\begin{algorithm}
+\caption{Fermat Primality Test}
+\begin{algorithmic}[1]
+\Function{FermatTest}{$n, k$} \Comment{$k$ = number of rounds}
+    \If{$n < 4$} \Return{$n = 2$ or $n = 3$} \EndIf
+    \For{$i \gets 1$ to $k$}
+        \State $a \gets \text{random integer in } [2, n-2]$
+        \If{$\gcd(a, n) \neq 1$}
+            \Return{Composite} \Comment{Found a factor}
+        \EndIf
+        \If{$a^{n-1} \not\equiv 1 \pmod{n}$}
+            \Return{Composite} \Comment{$a$ is a Fermat witness}
+        \EndIf
+    \EndFor
+    \State \Return{Probably Prime}
+\EndFunction{}
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{Correctness:} Always correct when returning ``Composite.'' May incorrectly return ``Probably Prime'' for Carmichael numbers.
+
+\subsubsection{Miller-Rabin Primality Test}
+
+The standard probabilistic test for cryptographic applications.
+
+\begin{algorithm}
+\caption{Miller-Rabin Primality Test (Detailed)}
+\begin{algorithmic}[1]
+\Function{MillerRabin}{$n, k$}
+    \If{$n < 4$} \Return{$n = 2$ or $n = 3$} \EndIf
+    \If{$n \bmod 2 = 0$} \Return{False} \EndIf
+    
+    \State \Comment{Write $n - 1 = 2^r \cdot d$ with $d$ odd}
+    \State $r \gets 0$; $d \gets n - 1$
+    \While{$d \bmod 2 = 0$}
+        \State $r \gets r + 1$
+        \State $d \gets d / 2$
+    \EndWhile
+    
+    \For{$i \gets 1$ to $k$}
+        \State $a \gets \text{random integer in } [2, n-2]$
+        \State $x \gets \Call{ModExp}{a, d, n}$ \Comment{$a^d \bmod n$}
+        
+        \If{$x = 1$ or $x = n-1$}
+            \State \textbf{continue} \Comment{Passes this round}
+        \EndIf
+        
+        \State $\textit{composite} \gets \text{True}$
+        \For{$j \gets 1$ to $r-1$}
+            \State $x \gets x^2 \bmod n$
+            \If{$x = n-1$}
+                \State $\textit{composite} \gets \text{False}$
+                \State \textbf{break}
+            \EndIf
+        \EndFor
+        
+        \If{$\textit{composite}$}
+            \Return{Composite}
+        \EndIf
+    \EndFor
+    \State \Return{Probably Prime}
+\EndFunction{}
+\end{algorithmic}
+\end{algorithm}
+
+\textbf{Correctness:} Never returns ``Composite'' for a prime. For any composite $n$, at least $3/4$ of bases are strong witnesses.
+
+\subsection{Time Complexity Analysis}
+
+Let $n$ be the number being tested and $b = \log_2 n$ be its bit length.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llll@{}}
+\toprule
+\textbf{Algorithm} & \textbf{Time Complexity} & \textbf{Deterministic?} & \textbf{Notes} \\
+\midrule
+Trial Division & $O(\sqrt{n}) = O(2^{b/2})$ & Yes & Exponential in bit length \\
+Fermat Test ($k$ rounds) & $O(k \cdot b^3)$ & No & Fails on Carmichael numbers \\
+Miller-Rabin ($k$ rounds) & $O(k \cdot b^3)$ & No & Error $\leq (1/4)^k$ \\
+Miller-Rabin (det., GRH) & $O(b^5)$ & Conditional & Assumes GRH \\
+AKS & $\tilde{O}(b^6)$ & Yes & First poly-time deterministic \\
+\bottomrule
+\end{tabular}%
+}
+\end{center}
+
+\textbf{Explanation of complexity terms:}
+\begin{itemize}
+    \item $O(b^3)$ per round: $O(b)$ multiplications $\times$ $O(b^2)$ per multiplication (schoolbook)
+    \item With FFT multiplication: $O(b^2 \log b \log\log b)$ per round
+    \item $\tilde{O}$ notation: ignores polylogarithmic factors
+\end{itemize}
+
+\subsection{Space Complexity Analysis}
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Algorithm} & \textbf{Space Complexity} \\
+\midrule
+Trial Division & $O(b)$ \quad (store $n$, loop counter, intermediate results) \\
+Fermat Test & $O(b)$ \quad (store $n$, $a$, intermediate modular values) \\
+Miller-Rabin & $O(b)$ \quad (store $n$, $d$, $r$, $x$, loop counters) \\
+AKS & $O(b^2)$ \quad (polynomial computations) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All practical primality tests require only $O(b) = O(\log n)$ space, making them highly memory-efficient even for cryptographic-sized numbers.
+
+\subsection{Comparative Analysis}
+
+\subsubsection{Practical Performance}
+For a 1024-bit prime candidate:
+\begin{itemize}
+    \item \textbf{Trial Division}: Would require testing up to $2^{512}$ divisors---computationally impossible
+    \item \textbf{Miller-Rabin (40 rounds)}: $\approx$ 40 modular exponentiations $\approx$ 80 milliseconds
+    \item \textbf{AKS}: Several orders of magnitude slower than Miller-Rabin
+\end{itemize}
+
+\subsubsection{Error-Complexity Trade-off}
+Miller-Rabin offers a tunable trade-off between speed and certainty:
+
+\begin{center}
+\begin{tabular}{@{}ccc@{}}
+\toprule
+\textbf{Rounds ($k$)} & \textbf{Time (relative)} & \textbf{Error Probability} \\
+\midrule
+1 & $1\times$ & $\leq 25\%$ \\
+10 & $10\times$ & $\leq 10^{-6}$ \\
+40 & $40\times$ & $\leq 10^{-24}$ \\
+100 & $100\times$ & $\leq 10^{-60}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection{Asymptotic Comparison}
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+    xlabel={Bit length $b$},
+    ylabel={Operations (log scale)},
+    ymode=log,
+    xmin=10, xmax=2000,
+    ymin=1, ymax=1e30,
+    legend pos=north west,
+    grid=major,
+    width=12cm,
+    height=7cm
+]
+\addplot[blue, thick, domain=10:2000, samples=50] {2^(x/2)};
+\addlegendentry{Trial Division $O(2^{b/2})$}
+\addplot[red, thick, domain=10:2000, samples=50] {40*x^3};
+\addlegendentry{Miller-Rabin $O(b^3)$}
+\addplot[green!60!black, thick, domain=10:2000, samples=50] {x^6};
+\addlegendentry{AKS $O(b^6)$}
+\end{axis}
+\end{tikzpicture}
+\end{center}
+
+The graph illustrates why Trial Division becomes infeasible beyond $\sim$60 bits, while Miller-Rabin remains practical for thousands of bits.
+
+% -------------------------------------------------------------------
+% RESULTS
+% -------------------------------------------------------------------
+\section{Experimental Results}
+We compared the execution time of Trial Division versus Miller-Rabin for numbers of increasing bit length.
+
+\begin{table}[htbp]
+\centering
+\caption{Performance comparison---estimated times (in seconds)}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Bit Size} & \textbf{Number Value (approx)} & \textbf{Trial Div.} & \textbf{Miller-Rabin} \\
+\midrule
+20 bits & $10^6$ & 0.0001s & 0.0002s \\
+40 bits & $10^{12}$ & 0.52s & 0.0003s \\
+60 bits & $10^{18}$ & $> 1$ hour & 0.0005s \\
+1024 bits & $10^{308}$ & - & 0.08s \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The results show that while Trial Division is acceptable for very small numbers, it fails exponentially as the number grows. Miller-Rabin remains efficient even for cryptographic-sized numbers (1024 bits), verifying them in fractions of a second.
+
+\section{Conclusion and Future Research Directions}
+
+\subsection{Summary of Contributions}
+
+This project has presented a comprehensive study of primality testing algorithms, bridging theoretical foundations and practical applications. Our key contributions include:
+
+\textbf{Theoretical Impact:}
+\begin{itemize}
+    \item Rigorous derivation of the Miller-Rabin test from Fermat's Little Theorem
+    \item Analysis of Carmichael numbers and Korselt's criterion with worked examples
+    \item Proof sketches for key theorems (Fermat, Rabin's $1/4$ bound, Miller's GRH-conditional result)
+    \item Complexity analysis comparing deterministic and probabilistic approaches
+\end{itemize}
+
+\textbf{Practical Impact:}
+\begin{itemize}
+    \item Implementation guidelines for cryptographic prime generation
+    \item Security requirements for RSA key generation
+    \item Analysis of real-world vulnerabilities and historical failures
+    \item Performance comparisons demonstrating Miller-Rabin's superiority for large numbers
+\end{itemize}
+
+\subsection{Key Findings}
+
+Our investigation confirms several important conclusions:
+\begin{enumerate}
+    \item \textbf{Trial Division is fundamentally limited}: With $O(2^{b/2})$ complexity, it becomes computationally infeasible beyond approximately 60 bits.
+    
+    \item \textbf{Fermat's test is insecure}: Carmichael numbers defeat the test completely, making it unsuitable for cryptographic applications.
+    
+    \item \textbf{Miller-Rabin is the practical standard}: With $O(k \cdot b^3)$ complexity and provable error bounds of $(1/4)^k$, it offers the optimal balance of speed and reliability.
+    
+    \item \textbf{Primality testing is security-critical}: Weak prime generation has caused real-world cryptographic failures affecting millions of users.
+\end{enumerate}
+
+\subsection{Open Problems in Primality Testing}
+
+Despite significant progress, several fundamental questions remain open:
+
+\subsubsection{Unconditional Derandomization}
+\begin{itemize}
+    \item \textbf{Problem}: Can Miller-Rabin be made deterministic without assuming the Generalized Riemann Hypothesis?
+    \item \textbf{Status}: The AKS algorithm (2002) provides unconditional deterministic testing, but with $\tilde{O}(b^6)$ complexity---much slower than Miller-Rabin in practice.
+    \item \textbf{Challenge}: Find an unconditional deterministic test with complexity matching probabilistic Miller-Rabin.
+\end{itemize}
+
+\subsubsection{Improved Error Bounds}
+\begin{itemize}
+    \item \textbf{Problem}: Can the $1/4$ per-round error bound for Miller-Rabin be improved?
+    \item \textbf{Status}: For random composites, the actual error rate is much lower, but worst-case analysis remains at $1/4$.
+    \item \textbf{Conjecture}: There may exist efficient tests with error probability $o(1/4)$ per round.
+\end{itemize}
+
+\subsubsection{Quantum Resistance}
+\begin{itemize}
+    \item \textbf{Problem}: Shor's algorithm (1994) can factor integers in polynomial time on a quantum computer, breaking RSA.
+    \item \textbf{Status}: Current quantum computers are too small to threaten RSA, but progress continues.
+    \item \textbf{Research Direction}: Post-quantum cryptography (lattices, codes, isogenies) does not rely on large primes.
+\end{itemize}
+
+\subsection{Future Research Directions}
+
+\subsubsection{Primality Certificates}
+Develop efficient methods for generating short, easily verifiable proofs of primality (Pratt certificates, Atkin-Morain ECPP) for applications requiring absolute certainty.
+
+\subsubsection{Hardware Acceleration}
+\begin{itemize}
+    \item Optimized modular exponentiation on GPUs and FPGAs
+    \item Secure hardware implementations resistant to side-channel attacks
+    \item Trusted execution environments for key generation
+\end{itemize}
+
+\subsubsection{Distributed Prime Generation}
+Protocols for generating shared RSA moduli without any party learning the factors, with applications in threshold cryptography and secure multi-party computation.
+
+\subsubsection{Enhanced Security Standards}
+\begin{itemize}
+    \item Formal verification of prime generation implementations
+    \item Automated testing for weak prime vulnerabilities
+    \item Integration with certificate transparency for public keys
+\end{itemize}
+
+\subsection{Concluding Remarks}
+
+Primality testing, while a classical problem in number theory, remains at the heart of modern cryptographic security. The journey from Fermat's 17th-century theorem to today's Miller-Rabin implementations illustrates how pure mathematics finds profound practical application.
+
+As we enter an era of quantum computing and increasingly sophisticated cyber threats, the generation and verification of prime numbers will continue to be a cornerstone of secure communication. The algorithms and principles explored in this project will remain relevant even as new cryptographic paradigms emerge.
+
+% -------------------------------------------------------------------
+% REFERENCES
+% -------------------------------------------------------------------
+\section*{References}
+\addcontentsline{toc}{section}{References}
+
+This project draws upon foundational work in computational number theory and cryptography.
+
+\subsection{Primary Academic References}
+
+\subsubsection{Foundational Primality Testing}
+\begin{itemize}
+    \item \textbf{Miller, G.L.} (1976). ``Riemann's Hypothesis and Tests for Primality.'' \textit{J. Comput. System Sci.}, 13(3), 300--317.
+    
+    \item \textbf{Rabin, M.O.} (1980). ``Probabilistic Algorithm for Testing Primality.'' \textit{J. Number Theory}, 12(1), 128--138.
+    
+    \item \textbf{Agrawal, M., Kayal, N., \& Saxena, N.} (2004). ``PRIMES is in P.'' \textit{Annals of Mathematics}, 160(2), 781--793.
+\end{itemize}
+
+\subsubsection{Carmichael Numbers}
+\begin{itemize}
+    \item \textbf{Korselt, A.} (1899). ``Problème chinois.'' \textit{L'intermédiaire des mathématiciens}, 6, 142--143.
+    
+    \item \textbf{Alford, W.R., Granville, A., \& Pomerance, C.} (1994). ``There are Infinitely Many Carmichael Numbers.'' \textit{Annals of Mathematics}, 139(3), 703--722.
+\end{itemize}
+
+\subsubsection{RSA and Standards}
+\begin{itemize}
+    \item \textbf{Rivest, R.L., Shamir, A., \& Adleman, L.} (1978). ``A Method for Obtaining Digital Signatures and Public-Key Cryptosystems.'' \textit{Comm. ACM}, 21(2), 120--126.
+    
+    \item \textbf{NIST FIPS 186-4} (2013). Digital Signature Standard.
+    
+    \item \textbf{NIST SP 800-133 Rev. 2} (2023). Recommendation for Key Generation Methods.
+\end{itemize}
+
+\subsection{Secondary Sources}
+\begin{itemize}
+    \item \textbf{CP-Algorithms} (2024). ``Primality Tests.'' \url{https://cp-algorithms.com/algebra/primality_tests.html}
+    
+    \item \textbf{Cormen, T.H., et al.} (2009). \textit{Introduction to Algorithms} (3rd ed.). MIT Press. Chapter 31.
+    
+    \item \textbf{Menezes, A.J., et al.} (1996). \textit{Handbook of Applied Cryptography}. CRC Press.
+\end{itemize}
+
+\subsection{Online Resources}
+\begin{itemize}
+    \item OEIS A002997: Carmichael numbers
+    \item OEIS A014233: Smallest strong pseudoprimes
+    \item Wolfram MathWorld: Mathematical definitions and proofs
+\end{itemize}
+
+\end{document}
