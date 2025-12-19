@@ -647,13 +647,12 @@ We test $n = 221$ ($13 \times 17$) with base $a = 2$.
 \begin{enumerate}
     \item \textbf{Decomposition}: $n - 1 = 220 = 2^2 \cdot 55$. Thus $r = 2, d = 55$.
     \item \textbf{Initial Step}: $x_0 = 2^{55} \bmod 221$.
-    Calculating $2^{55}$: $2^{10} = 1024 \equiv 140 \pmod{221}$.
-    Using modular exponentiation, $2^{55} \equiv 112 \pmod{221}$.
-    $112 \neq 1$ and $112 \neq 220$. Continue.
-    \item \textbf{Squaring}: $x_1 = 112^2 \bmod 221 = 12544 \bmod 221 = 168$.
-    $168 \neq 220$.
+    Using modular exponentiation, $2^{55} \equiv 128 \pmod{221}$.
+    $128 \neq 1$ and $128 \neq 220$. Continue.
+    \item \textbf{Squaring}: $x_1 = 128^2 \bmod 221 = 16384 \bmod 221 = 30$.
+    $30 \neq 220$.
     \item \textbf{End of Loop}: We finished all $r-1$ squarings without seeing $n-1$.
-    \item \textbf{Result}: Returns \textbf{Composite}. (112 squared became 168, which is $\neq -1$).
+    \item \textbf{Result}: Returns \textbf{Composite}. (128 squared became 30, which is $\neq -1$).
 \end{enumerate}
 
 \subsubsection{Case 3: A Strong Liar \texorpdfstring{($n = 2047$)}{(n = 2047)}}
