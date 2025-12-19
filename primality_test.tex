@@ -625,6 +625,48 @@ With $k$ independent rounds:
 
 For cryptographic applications, $k = 40$ rounds is standard, giving an error probability far smaller than hardware failure rates. In practice, the actual error rate is even lower because the $1/4$ bound is a worst-case guarantee.
 
+\subsection{Step-by-Step Numerical Examples}
+
+To clarify the mechanics of the Miller-Rabin test, we present traces for three distinct cases.
+
+\subsubsection{Case 1: Proving Primality \texorpdfstring{($n = 13$)}{(n = 13)}}
+We test $n = 13$ with base $a = 2$.
+\begin{enumerate}
+    \item \textbf{Decomposition}: $n - 1 = 12$. We factor out powers of 2: $12 = 2^2 \cdot 3$. Thus $r = 2$ and $d = 3$.
+    \item \textbf{Initial Modular Exponentiation}:
+    Compute $x_0 = a^d \bmod n = 2^3 \bmod 13 = 8$.
+    Since $x_0 \neq 1$ and $x_0 \neq 12$ ($n-1$), we proceed to the squaring loop.
+    \item \textbf{Squaring Loop}:
+    We squarings $r-1 = 1$ time.
+    $x_1 = x_0^2 \bmod 13 = 8^2 \bmod 13 = 64 \bmod 13 = 12 \equiv -1$.
+    \item \textbf{Result}: We reached $n-1$. The test returns \textbf{Probably Prime}.
+\end{enumerate}
+
+\subsubsection{Case 2: Detecting Compositeness \texorpdfstring{($n = 221$)}{(n = 221)}}
+We test $n = 221$ ($13 \times 17$) with base $a = 2$.
+\begin{enumerate}
+    \item \textbf{Decomposition}: $n - 1 = 220 = 2^2 \cdot 55$. Thus $r = 2, d = 55$.
+    \item \textbf{Initial Step}: $x_0 = 2^{55} \bmod 221$.
+    Calculating $2^{55}$: $2^{10} = 1024 \equiv 140 \pmod{221}$.
+    Using modular exponentiation, $2^{55} \equiv 112 \pmod{221}$.
+    $112 \neq 1$ and $112 \neq 220$. Continue.
+    \item \textbf{Squaring}: $x_1 = 112^2 \bmod 221 = 12544 \bmod 221 = 168$.
+    $168 \neq 220$.
+    \item \textbf{End of Loop}: We finished all $r-1$ squarings without seeing $n-1$.
+    \item \textbf{Result}: Returns \textbf{Composite}. (112 squared became 168, which is $\neq -1$).
+\end{enumerate}
+
+\subsubsection{Case 3: A Strong Liar \texorpdfstring{($n = 2047$)}{(n = 2047)}}
+We test $n = 2047$ ($23 \times 89$) with base $a = 2$.
+\begin{enumerate}
+    \item \textbf{Decomposition}: $n - 1 = 2046 = 2^1 \cdot 1023$. Thus $r = 1, d = 1023$.
+    \item \textbf{Initial Step}: $x_0 = 2^{1023} \bmod 2047$.
+    It turns out $2^{11} = 2048 \equiv 1 \pmod{2047}$.
+    Since $1023 = 11 \times 93$, we have $2^{1023} = (2^{11})^{93} \equiv 1^{93} \equiv 1 \pmod{2047}$.
+    \item \textbf{Result}: Since $x_0 = 1$, the loop is skipped and the test returns \textbf{Probably Prime}.
+\end{enumerate}
+This shows why $n=2047$ is a strong pseudoprime to base 2. However, trying base $a=3$ reveals compositeness immediately.
+
 \subsection{Deterministic Miller-Rabin}
 
 While Miller-Rabin is typically presented as a probabilistic algorithm, it can be made \textbf{deterministic} for bounded ranges of $n$ by testing specific small bases.
@@ -940,10 +982,24 @@ where $m$ is the plaintext message (as an integer $0 \leq m < N$) and $c$ is the
 m = c^d \bmod N
 \]
 
-\textbf{Why it works:} By Euler's theorem, for any $m$ coprime to $N$:
+\subsubsection{Proof of Correctness}
+We must show that $m^{ed} \equiv m \pmod N$ for all $0 \leq m < N$.
+Since $ed \equiv 1 \pmod{\phi(N)}$, we can write $ed = 1 + k(p-1)(q-1)$ for some integer $k$.
+
+We verify the congruence modulo $p$:
+\begin{itemize}
+    \item \textbf{Case 1:} $p \nmid m$. By Fermat's Little Theorem, $m^{p-1} \equiv 1 \pmod p$.
+    \[
+    m^{ed} = m^{1 + k(p-1)(q-1)} = m \cdot (m^{p-1})^{k(q-1)} \equiv m \cdot 1^{k(q-1)} \equiv m \pmod p
+    \]
+    \item \textbf{Case 2:} $p \mid m$. Then $m \equiv 0 \pmod p$, so $m^{ed} \equiv 0 \equiv m \pmod p$ (assuming $ed \geq 1$).
+\end{itemize}
+Thus, $m^{ed} \equiv m \pmod p$. By a symmetric argument, $m^{ed} \equiv m \pmod q$.
+Since $p$ and $q$ are distinct primes, by the Chinese Remainder Theorem:
 \[
-c^d = (m^e)^d = m^{ed} = m^{1 + k\phi(N)} = m \cdot (m^{\phi(N)})^k \equiv m \cdot 1^k = m \pmod{N}
+m^{ed} \equiv m \pmod{pq}
 \]
+which proves the correctness of RSA for \textit{all} messages.
 
 \subsection{Why Primality Testing is Critical to RSA Security}
 
